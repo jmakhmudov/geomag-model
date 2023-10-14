@@ -30,13 +30,12 @@ exports.predictWithTF = functions.https.onRequest(async (req, res) => {
       const averageTemperature = filteredData.reduce((sum, data) =>
         sum + parseFloat(data[3]), 0) / filteredData.length;
 
-      hourlyData.push(averageSpeed / 100,
-          averageDensity, averageTemperature / 100000);
+      hourlyData.push([averageSpeed / 100,
+        averageDensity, averageTemperature / 100000]);
     }
     const pred = await predict(hourlyData.reverse());
-    const jsonResponse = {
-      prediction:
-        pred < 0 ? 0.00 : Math.abs(roundToNearestTemplate(pred)).toFixed(2)};
+    const jsonResponse = {prediction: pred < 0 ? Number(0).toFixed(2):
+      roundToNearestTemplate(pred).toFixed(2)};
     res.status(200).json(jsonResponse);
   } catch (error) {
     console.error("Error:", error);
@@ -49,11 +48,6 @@ exports.predictWithTF = functions.https.onRequest(async (req, res) => {
  *
  * @param {number} number - The input float number to be rounded.
  * @return {number} The rounded number using the nearest template.
- *
- * @example
- * const originalNumber = 4.56;
- * const roundedNumber = roundToNearestTemplate(originalNumber);
- * // Output: 4.67
  */
 function roundToNearestTemplate(number) {
   const fractionalPart = number - Math.floor(number);
@@ -74,9 +68,9 @@ function roundToNearestTemplate(number) {
  * @return {number} - The sum of a and b.
  */
 async function predict(data) {
-  const tensor = tf.tensor(data, [1, 72]);
-  const model = await tf.loadLayersModel("https://firebasestorage.googleapis.com/v0/b/geomag-ml-api.appspot.com/o/model.json?alt=media&token=db016038-4c56-4c85-97ae-3ec764638d5d");
+  const tensor2 = tf.tensor2d(data);
+  const tensor = tf.reshape(tensor2, [1, 72]);
+  const model = await tf.loadLayersModel("https://firebasestorage.googleapis.com/v0/b/geomag-ml-api.appspot.com/o/model.json?alt=media&token=26ff0941-658d-46a5-9c56-3ac422742f09");
   const pred = await model.predict(tensor).dataSync();
-  console.log(pred)
   return pred[0];
 }
