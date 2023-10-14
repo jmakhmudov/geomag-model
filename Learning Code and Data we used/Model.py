@@ -1,77 +1,62 @@
 import pandas as pd
 import tensorflow as tf
-import numpy as np
 from tensorflow import keras
 from sklearn.model_selection import train_test_split
 
+sw_df = pd.read_csv(r"C:\Users\User\Desktop\DSCOVR PROJECT\dscovr data\dscovr data\output_dscovr.csv", sep=",")
 
-# Solar_Wind_data
-sw_df = pd.read_csv(r"C:\Users\99899\Documents\dscovr data\output_dscovr.csv", sep=",")
-# Kp_data
-kp_df = pd.read_csv(r"C:\Users\99899\Documents\dscovr data\output_kp.csv", sep=",") 
+kp_df = pd.read_csv(r"C:\Users\User\Desktop\DSCOVR PROJECT\dscovr data\dscovr data\output_kp.csv", sep=",") 
 
-#New Vars
-bx = sw_df["bX"]
-by = sw_df["bY"]
-bz = sw_df["bZ"]
-sws = sw_df["speed"]
-d = sw_df["density"]
-t = sw_df["temp"]
+sws_ = sw_df["speed"]
+d_ = sw_df["density"]
+t_ = sw_df["temp"]
 kp = kp_df["Kp"]
 
-# Split_pre
-bx_3 = bx[:-3:3]
-bx_2 = bx[1:-2:3]
-bx_1 = bx[2:-1:3]
+sws = {}
+d = {}
+t = {}
 
-by_3 = by[:-3:3]
-by_2 = by[1:-2:3]
-by_1 = by[2:-1:3]
+for i in range (1, 25):
+  sws_i = sws_[i::3] / 100
+  sws[str(i)] = sws_i
+  
+for i in range (1, 25):
+  d_i = d_[i::3] / 10
+  d[str(i)] = d_i
 
-bz_3 = bz[:-3:3]
-bz_2 = bz[1:-2:3]
-bz_1 = bz[2:-1:3]
+for i in range (1, 25):
+  t_i = t_[i::3] / 100000
+  t[str(i)] = t_i
 
-sws_3 = sws[:-3:3]/100
-sws_2 = sws[1:-2:3]/100
-sws_1 = sws[2:-1:3]/100
-
-d_3 = d[:-3:3]/10
-d_2 = d[1:-2:3]/10
-d_1 = d[2:-1:3]/10
-
-t_3 = t[:-3:3]/100000
-t_2 = t[1:-2:3]/100000
-t_1 = t[2:-1:3]/100000
-
-
-kp = kp[1:]
+kp = kp[9:]
 
 kp = kp.reset_index(drop=True)
-# kp_df = pd.concat ([kp], axis=1)
 
+x_l = []
 
-#to DataFrame
-x1 = pd.concat([bx_1, by_1, bz_1, sws_1, d_1, t_1], axis=1)
-x2 = pd.concat([bx_2, by_2, bz_2, sws_2, d_2, t_2], axis=1)
-x3 = pd.concat([bx_3, by_3, bz_3, sws_3, d_3, t_3], axis=1)
+for i in range(1, 25):
+    x = pd.concat([sws[str(i)], d[str(i)], t[str(i)]], axis=1)
+    x_l.append(x)
 
-x1 = x1.reset_index(drop=True)
-x2 = x2.reset_index(drop=True)
-x3 = x3.reset_index(drop=True)
+for i in range(0, 24):
+   x_l[i] = x_l[i].reset_index(drop=True)
 
-x_df = pd.concat ([x1, x2, x3], axis=1)
+x_df = pd.concat([x_l[23], x_l[22], x_l[21], x_l[20], x_l[19], x_l[18], x_l[17], x_l[16], x_l[15], x_l[14], x_l[13], x_l[12], x_l[11], x_l[10], x_l[9], x_l[8], x_l[7], x_l[6], x_l[5], x_l[4], x_l[3], x_l[2], x_l[1], x_l[0]], axis = 1)
 
-# Split
-x_train, x_test, y_train, y_test = train_test_split(x_df, kp, test_size=0.2, random_state = 43)
+x_df = x_df[:6239]
 
-model = tf.keras.Sequential([ keras.layers.Dense(units=128, input_shape=[18]), keras.layers.Dense(units=4) ])
+model = tf.keras.Sequential([ keras.layers.Dense(units=128, input_shape=[72]), keras.layers.Dense(units=4)])
 
-model.compile(optimizer='adam', loss='mae')
+model.compile(optimizer='Adam', loss='mse')
 
-model.fit(x_train, y_train, epochs=800, validation_split=0.2)
+x_train, x_test, y_train, y_test = train_test_split(x_df, kp, test_size=0.1)
 
-print(model.evaluate(x_test, y_test, batch_size=64))
+model.fit(x_train, y_train, epochs=350, use_multiprocessing=True, workers=16)
 
-model.save(r"C:\Users\99899\Documents\dscovr data\models\Model")
+print(model.evaluate(x_test, y_test, batch_size=2) , "2")
+print(model.evaluate(x_test, y_test, batch_size=4) , "4")
+print(model.evaluate(x_test, y_test, batch_size=1) , "1")
+print(model.evaluate(x_test, y_test, batch_size=8) , "8")
+
+model.save(r"C:\Users\User\Desktop\DSCOVR PROJECT\dscovr data\dscovr data\models_new\model 1")
 print("Saved")
